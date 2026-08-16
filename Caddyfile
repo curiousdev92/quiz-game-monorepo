@@ -1,0 +1,13 @@
+{$DOMAIN} {
+	handle /api/* {
+		reverse_proxy api:4000
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+
+	request_body {
+		max_size 20MB
+	}
+}

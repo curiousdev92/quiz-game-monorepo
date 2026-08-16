@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: #eef2ff;
+  --color-brand-100: #e0e7ff;
+  --color-brand-200: #c7d2fe;
+  --color-brand-300: #a5b4fc;
+  --color-brand-400: #818cf8;
+  --color-brand-500: #6366f1;
+  --color-brand-600: #4f46e5;
+  --color-brand-700: #4338ca;
+  --color-correct: #16a34a;
+  --color-correct-soft: #dcfce7;
+  --color-wrong: #dc2626;
+  --color-wrong-soft: #fee2e2;
+}
+
+body {
+  font-feature-settings: "ss01";
+}
+
+/* For Chrome, Safari, and Opera */
+*::-webkit-scrollbar {
+  display: none;
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: none;
+}
+
+/* For Internet Explorer and older Edge */
+* {
+  -ms-overflow-style: none;
+}
+
+input {
+  outline: none;
+}
+
+a,
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}

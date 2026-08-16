@@ -1,0 +1,28 @@
+# Deps & build outputs — reinstalled/rebuilt inside the image
+node_modules
+**/node_modules
+apps/*/dist
+apps/*/.next
+packages/*/dist
+
+# Env & secrets — inject at runtime, never bake into an image
+.env
+.env.*
+!.env.production.example
+apps/*/.env
+apps/*/.env.*
+
+# VCS, docs, tooling
+.git
+.gitignore
+.github
+.claude
+docs
+*.md
+.turbo
+**/.turbo
+
+# Local/editor
+.DS_Store
+*.log
+scratchpad

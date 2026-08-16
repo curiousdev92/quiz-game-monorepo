@@ -1,0 +1,29 @@
+{
+  "name": "quiz-game",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "lint:ox": "oxlint",
+    "lint:ox:fix": "oxlint --fix",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:migrate": "pnpm --filter @quiz/api prisma:migrate",
+    "db:generate": "pnpm --filter @quiz/api prisma:generate",
+    "db:studio": "pnpm --filter @quiz/api prisma:studio",
+    "db:seed": "pnpm --filter @quiz/api db:seed"
+  },
+  "devDependencies": {
+    "oxfmt": "^0.60.0",
+    "oxlint": "^1.75.0",
+    "turbo": "^2.3.3"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@10.18.3"
+}

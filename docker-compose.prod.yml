@@ -1,0 +1,106 @@
+# Production stack: caddy (TLS reverse proxy) + web + api + postgres + redis.
+# Caddy is the only service exposed to the internet (80/443); it terminates
+# HTTPS (auto Let's Encrypt via DOMAIN) and routes / -> web:3000, /api -> api:4000.
+# Supply secrets via a .env file (see .env.production.example) or your
+# orchestrator's secret store.
+#
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+#
+# NOTE: NEXT_PUBLIC_API_URL is baked into the web image at build time.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?set in env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in env}
+      POSTGRES_DB: ${POSTGRES_DB:?set in env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # Require auth. The app reads REDIS_PASSWORD (see .env.production.example).
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?set in env}", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      API_PORT: 4000
+      JWT_SECRET: ${JWT_SECRET:?set in env}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      ADMIN_PHONES: ${ADMIN_PHONES}
+      OTP_TTL_SECONDS: ${OTP_TTL_SECONDS:-300}
+      OTP_MOCK_CODE: ${OTP_MOCK_CODE:-}
+      KAVENEGAR_API_KEY: ${KAVENEGAR_API_KEY}
+      KAVENEGAR_OTP_TEMPLATE: ${KAVENEGAR_OTP_TEMPLATE}
+      KAVENEGAR_WELCOME_TEMPLATE: ${KAVENEGAR_WELCOME_TEMPLATE}
+      KAVENEGAR_DISCOUNT_TEMPLATE: ${KAVENEGAR_DISCOUNT_TEMPLATE}
+      GAME_SERVICE_BASE_URL: ${GAME_SERVICE_BASE_URL:-}
+      GAME_SERVICE_KEY: ${GAME_SERVICE_KEY:-}
+      CORS_ORIGIN: ${CORS_ORIGIN:?set in env}
+      # Apply migrations on boot (fine for a single instance; otherwise run as a release step).
+      RUN_MIGRATIONS: "true"
+    expose:
+      - "4000"
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        # Build-time only — the public API URL is inlined into the bundle.
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?set in env}
+    restart: unless-stopped
+    depends_on:
+      - api
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - api
+      - web
+    environment:
+      DOMAIN: ${DOMAIN:?set in env, e.g. quiz.example.com}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  pgdata:
+  redisdata:
+  caddy_data:
+  caddy_config:
